@@ -95,7 +95,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>random-job-builder</artifactId>
-      <version>1.1-SNAPSHOT</version>
+      <version>1.1-exposeapis-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
