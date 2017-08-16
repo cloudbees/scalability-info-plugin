@@ -47,7 +47,9 @@ public class PluginTest {
         val = registry.runCompletedRate.getMeanRate();
         Assert.assertTrue("Run completed mean rate should be over zero but instead wasn't: ", val > 0.0);
 
-        Assert.assertTrue("Should have nonzero flownode creation count", registry.flowNodeCreationMeter.getCount() > 0);
-        Assert.assertTrue("Should have nonzero flownode creation 1 minute rate", registry.flowNodeCreationMeter.getOneMinuteRate() > 0.0);
+        if (StaticMetricsRegistry.canCountFlownodes()) {
+            Assert.assertTrue("Should have nonzero flownode creation count", registry.flowNodeCreationMeter.getCount() > 0);
+            Assert.assertTrue("Should have nonzero flownode creation 1 minute rate", registry.flowNodeCreationMeter.getOneMinuteRate() > 0.0);
+        }
     }
 }

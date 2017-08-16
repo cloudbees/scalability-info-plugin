@@ -59,13 +59,12 @@ public class StaticMetricsRegistry extends MetricProvider {
 
         @Override
         public void onNewHead(FlowNode flowNode) {
-            if (registry == null) {
-                registry = Jenkins.getActiveInstance().getExtensionList(StaticMetricsRegistry.class).get(0);
+            synchronized (this) {
+                if (registry == null) {
+                    registry = Jenkins.getActiveInstance().getExtensionList(StaticMetricsRegistry.class).get(0);
+                }
             }
-            if (registry.flowNodeCreationMeter != null) {
-                // Protects against early-initialization NPEs
-                registry.flowNodeCreationMeter.mark();
-            }
+            registry.flowNodeCreationMeter.mark();
         }
     }
 
@@ -74,15 +73,17 @@ public class StaticMetricsRegistry extends MetricProvider {
         StaticMetricsRegistry registry = null;
 
         @Override
-        public void onCompleted(Run run, @Nonnull TaskListener listener) {
-            if (registry == null) {
-                registry = Jenkins.getActiveInstance().getExtensionList(StaticMetricsRegistry.class).get(0);
+        public void onFinalized(Run run) {
+            if (run == null) {
+                return;
             }
-            if (run != null && registry.runCompletedRate != null && registry.recentRunTime != null) {
-                // Protects against early-initialization NPEs
-                registry.runCompletedRate.mark();
-                registry.recentRunTime.update(run.getDuration());
+            synchronized (this) {
+                if (registry == null) {
+                    registry = Jenkins.getActiveInstance().getExtensionList(StaticMetricsRegistry.class).get(0);
+                }
             }
+            registry.runCompletedRate.mark();
+            registry.recentRunTime.update(run.getDuration());
         }
     }
 
