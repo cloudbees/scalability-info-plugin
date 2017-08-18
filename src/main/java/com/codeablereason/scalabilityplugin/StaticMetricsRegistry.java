@@ -3,6 +3,7 @@ package com.codeablereason.scalabilityplugin;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricSet;
+import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.SlidingWindowReservoir;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -12,6 +13,7 @@ import hudson.model.Run;
 import hudson.model.listeners.RunListener;
 import jenkins.metrics.api.MetricProvider;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -19,6 +21,8 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -39,6 +43,8 @@ public class StaticMetricsRegistry extends MetricProvider {
 
     /** Rate at which we are generating FlowNodes... if using plugin versions supporting this */
     Meter flowNodeCreationMeter = new Meter();
+
+    Histogram flowNodeRunTime = new Histogram(new SlidingTimeWindowReservoir(1, TimeUnit.MINUTES));
 
     MetricSet metrics;
 
@@ -76,6 +82,12 @@ public class StaticMetricsRegistry extends MetricProvider {
                 }
             }
             registry.flowNodeCreationMeter.mark();
+            List<FlowNode> n = flowNode.getParents();
+            if (n.size() == 1) { // Can't compute if the first node and ignore parallels with multiple parents for now
+                FlowNode parent = n.get(0);
+                long runTime = TimingAction.getStartTime(flowNode)-TimingAction.getStartTime(parent);
+                registry.flowNodeRunTime.update(runTime);
+            }
         }
     }
 
@@ -104,7 +116,8 @@ public class StaticMetricsRegistry extends MetricProvider {
         if (StaticMetricsRegistry.canCountFlownodes()) {  // Don't register it if useless
             metrics = metrics(metric(name("jenkins", "scalemetrics", "runCompletedRate"), runCompletedRate),
                     metric(name("jenkins", "scalemetrics", "recentRunTime"), recentRunTime),
-                    metric(name("jenkins", "scalemetrics", "flownodeCreation"), flowNodeCreationMeter)
+                    metric(name("jenkins", "scalemetrics", "flownodeCreation"), flowNodeCreationMeter),
+                            metric(name("jenkins", "scalemetrics", "flowNodeTime"), flowNodeRunTime)
             );
         } else { // No flownode counters
             metrics = metrics(metric(name("jenkins", "scalemetrics", "runCompletedRate"), runCompletedRate),
