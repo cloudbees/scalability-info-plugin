@@ -38,8 +38,8 @@ public class StaticMetricsRegistry extends MetricProvider {
     /** Rate at which runs have completed (as separate from the scheduling rate) */
     Meter runCompletedRate = new Meter();
 
-    /** Time to complete the most recent (3) runs - less subject to noise due to sampling frequency */
-    Histogram recentRunTime = new Histogram(new SlidingWindowReservoir(3));
+    /** Time to complete builds finished in the last minute */
+    Histogram recentRunTime = new Histogram(new SlidingTimeWindowReservoir(1, TimeUnit.MINUTES));
 
     /** Rate at which we are generating FlowNodes... if using plugin versions supporting this */
     Meter flowNodeCreationMeter = new Meter();
