@@ -48,11 +48,14 @@ public class LoadGeneratorRegistry {
 
         @Override
         public void onGeneratorAdded(LoadGenerator loadGenerator) {
-            LoadGeneratorTaskCountGauge gauge = new LoadGeneratorTaskCountGauge(loadGenerator);
-            generatorIdToMetrics.put(loadGenerator.getGeneratorId(), gauge);
-            Metrics.metricRegistry().register(
-                    MetricRegistry.name("jenkins", "loadgenerators",gauge.getGeneratorShortName(),"currentTaskCount"),
-                    gauge);
+            String plannedName = MetricRegistry.name("jenkins", "loadgenerators",loadGenerator.getShortName(),"currentTaskCount");
+            if (!Metrics.metricRegistry().getMetrics().containsKey(plannedName)) {
+                LoadGeneratorTaskCountGauge gauge = new LoadGeneratorTaskCountGauge(loadGenerator);
+                generatorIdToMetrics.put(loadGenerator.getGeneratorId(), gauge);
+                Metrics.metricRegistry().register(
+                        plannedName,
+                        gauge);
+            }
         }
 
         @Override
